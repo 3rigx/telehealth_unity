@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/usr/lib/avr/include/**",
+        "/usr/share/arduino/hardware/arduino/avr/cores/arduino/**",
+        "/usr/share/arduino/hardware/arduino/avr/variants/standard/**",
+        "/usr/share/arduino/hardware/arduino/avr/libraries/**"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/avr-gcc",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "gcc-x64"
+    }
+  ],
+  "version": 4
+}
