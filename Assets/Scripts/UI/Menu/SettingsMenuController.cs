@@ -42,7 +42,7 @@ namespace Assets.Scripts.UI
 
         public void SetFSRUSB(int option)
         {
-            PlayerPrefs.SetString("FSRUsbPort", FSRTypeDropdown.options[option].text);
+            PlayerPrefs.SetString("FSRUsbPort", FSRUSBDropdown.options[option].text);
             PlayerPrefs.Save();
         }
 
@@ -57,8 +57,8 @@ namespace Assets.Scripts.UI
 
             FSRTypeDropdown.value = Array.IndexOf(FSRTypeDropdown.options.Select(e => e.text).ToArray(),
                 PlayerPrefs.GetString("FSRConntype", "Select"));
-            FSRUSBDropdown.value = Array.IndexOf(FSRUSBDropdown.options.Select(e => e.text).ToArray(),
-                PlayerPrefs.GetString("FSRUsbPort", "Select"));
+            FSRTypeDropdown.RefreshShownValue();
+
             FSRHostURI.text = PlayerPrefs.GetString("FSRUri", "");
             FSRHostAPIKey.text = PlayerPrefs.GetString("FSRApiKey", "");
 
@@ -69,11 +69,12 @@ namespace Assets.Scripts.UI
             foreach (var port in SerialPort.GetPortNames().Reverse())
             {
                 FSRUSBDropdown.options.Add(new TMP_Dropdown.OptionData(port));
-                if (port == PlayerPrefs.GetString("fsr"))
-                    FSRUSBDropdown.value = FSRUSBDropdown.options.Count - 1;
             }
+            FSRUSBDropdown.value = Array.IndexOf(FSRUSBDropdown.options.Select(e => e.text).ToArray(),
+                PlayerPrefs.GetString("FSRUsbPort", "Select"));
+            FSRUSBDropdown.RefreshShownValue();
 #else
-            FSRDropdown.options.Add(new TMP_Dropdown.OptionData("Unavailable"));
+            FSRUSBDropdown.options.Add(new TMP_Dropdown.OptionData("Unavailable"));
 #endif
         }
     }
