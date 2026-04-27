@@ -74,7 +74,7 @@ namespace Assets.Scripts.Sensors
                     var usbPort = PlayerPrefs.GetString("FSRUsbPort", "");
                     if (usbPort == "")
                         throw new IllegalSettingsException("FSRUsbPort", "You need to select an FSR USB Port");
-                    return new USBSensorConnector(sensors, usbPort, 11520, Parity.None, 213, StopBits.None, 4);
+                    return new USBSensorConnector(sensors, usbPort, 115200, Parity.None, 8, StopBits.One, 4);
                 case "WebSocket":
                     var uriString = PlayerPrefs.GetString("FSRUri", "");
                     if (uriString == "")
