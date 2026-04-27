@@ -9,9 +9,7 @@ namespace Assets.Scripts.Sensors.FSR
 
         public CombinedFSRController(IConnector<int> connector)
         {
-            //_connector = new USBSensorConnector(_sensors, "", 11520, Parity.None, 213, StopBits.None, 4);
             _connector = connector;
-            _connector.Connect();
         }
 
         public void Read()
