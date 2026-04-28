@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Smart Game.slnx"
+    "dotnet.defaultSolution": "telehealth-unity.slnx"
 }

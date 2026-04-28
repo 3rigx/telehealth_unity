@@ -12,8 +12,10 @@ using UnityEditor;
 using Random = UnityEngine.Random;
 
 
+
 namespace Assets.Scripts.AvatarRenderer
 {
+
 
     class PatientSelectorClickHandler : MonoBehaviour
     {
@@ -22,17 +24,31 @@ namespace Assets.Scripts.AvatarRenderer
 #nullable disable
         private CustomSkeletonHandler handler;
 
+
         private void Create(CustomSkeletonHandler handler)
         {
             this.handler = handler;
         }
+
+
         private void OnMouseOver()
         {
             if (Input.GetMouseButtonDown((int)MouseButton.Left) && Input.GetKey(KeyCode.LeftControl))
             {
                 zedController?.SetPatientHandler(handler);
+
+                // ── FIX: expanded console feedback on Ctrl+Left-click patient selection ──
+                Debug.Log($"[Patient Selected] ✔ Patient set via Ctrl+Click.\n" +
+                          $"  → GameObject  : {gameObject.name}\n" +
+                          $"  → IsPatient   : {handler.IsPatient}\n" +
+                          $"  → World Pos   : {transform.position}\n" +
+                          $"  → Body Format : {handler.bodyFormat}\n" +
+                          $"  → Keypoints   : {handler.currentKeypointsCount}\n" +
+                          $"  → ZedCtrl     : {(zedController != null ? zedController.name : "NOT FOUND")}");
             }
         }
+
+
         public static void attach(GameObject target, CustomSkeletonHandler handler)
         {
             if (zedController == null) zedController = FindObjectsByType<CustomZedController>().First();
@@ -40,12 +56,15 @@ namespace Assets.Scripts.AvatarRenderer
         }
     }
 
+
     public class CustomSkeletonHandler : ScriptableObject
     {
         private FeetColorer _feetColorer;
         private Animator animator;
 
+
         public GameObject[] Bones;
+
 
 
 
@@ -53,59 +72,76 @@ namespace Assets.Scripts.AvatarRenderer
         public int[] currentBonesList;
         public float[] currentConfidences;
 
+
         public HumanBodyBones[] currentHumanBodyBones;
         public Vector3[] currentJoints;
+
 
         public int currentKeypointsCount = -1;
         public int currentLeftAnkleIndex = -1;
         public int[] currentParentIds;
         public int currentRightAnkleIndex = -1;
 
+
         public int[] currentSpheresList;
         public string[] currentSpheresNameList;
+
 
         private GameObject humanoid;
 
 
+
         public GameObject JointPrefab;
+
 
 
         public float[] confidences34 = new float[BodyFormat.JointType_34_COUNT];
         public float[] confidences38 = new float[BodyFormat.JointType_38_COUNT];
         public float[] confidences70 = new float[BodyFormat.JointType_70_COUNT];
 
+
         public Vector3[] joints34 = new Vector3[BodyFormat.JointType_34_COUNT];
         public Vector3[] joints38 = new Vector3[BodyFormat.JointType_38_COUNT];
         public Vector3[] joints70 = new Vector3[BodyFormat.JointType_70_COUNT];
 
+
         private Dictionary<HumanBodyBones, Quaternion> m_DefaultRotations;
+
 
 
         [SerializeField] private float m_FeetOffset;
 
+
         public Color MaxPressureColor = Color.red;
+
 
         // Feet colorer setting
         public Color MinPressureColor = Color.green;
         public float Powf = 0.75f;
 
 
+
         private Dictionary<HumanBodyBones, RigBone> rigBone;
         private GameObject skeleton;
         public JointOverlay[] SphereOverlays;
 
+
         public GameObject[] Spheres;
+
 
 
         private Vector3 targetBodyPosition = new(0.0f, 0.0f, 0.0f);
         private bool usingAvatar = true;
 
 
+
         private ZEDSkeletonAnimator zedSkeletonAnimator = null;
         public Dictionary<HumanBodyBones, Quaternion> RigBoneTarget { get; set; }
 
+
         public Quaternion TargetBodyOrientation { get; set; } = Quaternion.identity;
         public Vector3 TargetBodyPositionWithHipOffset { get; set; } = new(0.0f, 0.0f, 0.0f);
+
 
         public BodyFormat bodyFormat
         {
@@ -117,7 +153,9 @@ namespace Assets.Scripts.AvatarRenderer
             }
         }
 
+
         public bool IsPatient { get; private set; }
+
 
         public float FeetOffset
         {
@@ -125,17 +163,23 @@ namespace Assets.Scripts.AvatarRenderer
             set => m_FeetOffset = value;
         }
 
+
         public void SetPatient()
         {
             IsPatient = true;
             SetColor(new Color(0.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f));
         }
 
+
         public void clearPatient()
         {
             IsPatient = false;
             SetColor(colors[Random.Range(0, colors.Length)]);
+
+
+            Debug.Log("[Patient Cleared] Patient deselected — skeleton returned to random colour.");
         }
+
 
         /// <summary>
         ///     Get Animator;
@@ -145,6 +189,7 @@ namespace Assets.Scripts.AvatarRenderer
         {
             return animator;
         }
+
 
 
         /// <summary>
@@ -158,6 +203,7 @@ namespace Assets.Scripts.AvatarRenderer
         {
             this.bodyFormat = new(bodyFormat);
 
+
             JointPrefab = jointObject;
             humanoid = Instantiate(avatarObject, Vector3.zero, Quaternion.identity);
             PatientSelectorClickHandler.attach(humanoid, this);
@@ -165,22 +211,28 @@ namespace Assets.Scripts.AvatarRenderer
             var invisiblelayer = LayerMask.NameToLayer("tagInvisibleToZED");
             //humanoid.layer = invisiblelayer;
 
+
             //zedSkeletonAnimator = humanoid.GetComponent<ZEDSkeletonAnimator>();
             //zedSkeletonAnimator.Skhandler = this;
 
+
             foreach (Transform child in humanoid.transform) child.gameObject.layer = invisiblelayer;
+
 
             // Init list of bones that will be updated by the data retrieved from the ZED SDK
             rigBone = new Dictionary<HumanBodyBones, RigBone>();
             RigBoneTarget = new Dictionary<HumanBodyBones, Quaternion>();
 
+
             m_DefaultRotations = new Dictionary<HumanBodyBones, Quaternion>();
+
 
             foreach (var bone in currentHumanBodyBones)
             {
                 if (bone != HumanBodyBones.LastBone)
                 {
                     rigBone[bone] = new RigBone(humanoid, bone);
+
 
                     if (avatarObject.GetComponent<Animator>())
                     {
@@ -190,9 +242,11 @@ namespace Assets.Scripts.AvatarRenderer
                     }
                 }
 
+
                 RigBoneTarget[bone] = Quaternion.identity;
             }
         }
+
 
         public void Destroy()
         {
@@ -204,6 +258,7 @@ namespace Assets.Scripts.AvatarRenderer
             Array.Clear(Bones, 0, Bones.Length);
             Array.Clear(Spheres, 0, Spheres.Length);
         }
+
 
         /// <summary>
         ///     Function that handles the humanoid position, rotation and bones movement
@@ -227,22 +282,26 @@ namespace Assets.Scripts.AvatarRenderer
                         ? jointsRotation[Array.IndexOf(currentHumanBodyBones, MirrorBone(rb))].mirror_x()
                         : jointsRotation[Array.IndexOf(currentHumanBodyBones, rb)];
 
+
             if (mirror)
             {
                 rootPosition = rootPosition.mirror_x();
                 rootRotation = rootRotation.mirror_x();
             }
 
+
             // Store global transform (to be applied to the Hips joint).
             TargetBodyOrientation = rootRotation;
             targetBodyPosition = rootPosition;
         }
+
 
         public void SetJointOverlays(Quaternion[] jointsRotation)
         {
             for (var i = 0; i < currentSpheresList.Length; i++)
                 SphereOverlays[i].SetRotationDisplay(jointsRotation[currentSpheresList[i]]);
         }
+
 
         /// <summary>
         ///     Returns the symmetric/mirror bone of <paramref name="humanBodyBone" /> in the human rig of the animator.
@@ -312,12 +371,15 @@ namespace Assets.Scripts.AvatarRenderer
             }
         }
 
+
         public void SetColor(Color color)
         {
             foreach (var bone in Bones) bone.GetComponent<Renderer>().material.color = color;
 
+
             foreach (var sphere in Spheres) sphere.GetComponent<Renderer>().material.color = color;
         }
+
 
 
         // Init skeleton display
@@ -330,7 +392,9 @@ namespace Assets.Scripts.AvatarRenderer
             skeleton.name = "Skeleton_ID_" + personId;
             var width = 0.025f;
 
+
             var color = colors[personId % colors.Length];
+
 
             for (var i = 0; i < Bones.Length; i++)
             {
@@ -339,43 +403,65 @@ namespace Assets.Scripts.AvatarRenderer
                 Bones[i] = cylinder;
             }
 
+
             for (var j = 0; j < Spheres.Length; j++)
             {
                 var newOverlay = Instantiate(JointPrefab, Vector3.zero, Quaternion.identity, skeleton.transform);
                 SphereOverlays[j] = newOverlay.GetComponent<JointOverlay>();
 
+
                 SphereOverlays[j].SetName(currentSpheresNameList[j]);
 
+
                 SphereOverlays[j].transform.localScale = new Vector3(width * 2, width * 2, width * 2);
+
 
                 var sphere = SphereOverlays[j].GetSphere();
                 sphere.name = currentSpheresList[j].ToString();
 
+
                 Spheres[j] = sphere;
             }
 
+
             SetColor(color);
+
 
             PatientSelectorClickHandler.attach(skeleton, this);
         }
 
+
         private void UpdateJointColor(Color32 leftHeelColor, Color32 leftToeColor, Color32 rightHeelColor,
             Color32 rightToeColor)
         {
-            var LeftFootIndex = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_FootLeft);
-            var LeftHeelIndex = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_HeelLeft);
+            var LeftFootIndex  = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_FootLeft);
+            var LeftHeelIndex  = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_HeelLeft);
             var RightFootIndex = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_FootRight);
             var RightHeelIndex = Array.IndexOf(currentSpheresList, BodyFormat.JointType_34_HeelRight);
 
-            if (LeftHeelIndex != -1) SphereOverlays[LeftHeelIndex].SetColor(leftHeelColor);
-            if (LeftFootIndex != -1) SphereOverlays[LeftFootIndex].SetColor(leftToeColor);
+
+            if (LeftHeelIndex  != -1) SphereOverlays[LeftHeelIndex].SetColor(leftHeelColor);
+            if (LeftFootIndex  != -1) SphereOverlays[LeftFootIndex].SetColor(leftToeColor);
+
 
             if (RightHeelIndex != -1) SphereOverlays[RightHeelIndex].SetColor(rightHeelColor);
             if (RightFootIndex != -1) SphereOverlays[RightFootIndex].SetColor(rightToeColor);
         }
 
+
         public void SetFeetPressure(float lHeelPressure, float lToePressure, float rHeelPressure, float rToePressure)
         {
+            // ── FIX: was `!= null`, which caused an immediate early return whenever
+            //         _feetColorer was assigned — preventing foot colour from ever updating.
+            //         Corrected to `== null` so we only bail out when the component is missing.
+            if (_feetColorer == null)
+            {
+                Debug.LogWarning("[FeetColorer] Component is null — foot pressure colours cannot be applied. " +
+                                 "Ensure FeetColorer is present as a child of the humanoid prefab.");
+                return;
+            }
+
+
             var leftHeelColor =
                 Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(lHeelPressure / 255, Powf));
             var leftToeColor =
@@ -385,19 +471,23 @@ namespace Assets.Scripts.AvatarRenderer
             var rightToeColor =
                 Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(rToePressure / 255, Powf));
 
+
             UpdateJointColor(leftHeelColor, leftToeColor, rightHeelColor, rightToeColor);
             _feetColorer.UpdateColor(leftHeelColor, leftToeColor, rightHeelColor, rightToeColor);
         }
+
 
         public void SetFeetPressure(SensorSystemState st)
         {
             SetFeetPressure(st.leftFoot.Heel, st.leftFoot.Toe, st.rightFoot.Heel, st.rightFoot.Toe);
         }
 
+
         // Update skeleton display with new SDK data
         private void UpdateSkeleton()
         {
             var width = 0.025f;
+
 
             for (var j = 0; j < Spheres.Length; j++)
                 if (ZEDSupportFunctions.IsVector3NaN(currentJoints[currentSpheresList[j]]))
@@ -413,10 +503,12 @@ namespace Assets.Scripts.AvatarRenderer
                 }
 
 
+
             for (var i = 0; i < Bones.Length; i++)
             {
                 var start = Spheres[Array.IndexOf(currentSpheresList, currentBonesList[2 * i])].transform.position;
-                var end = Spheres[Array.IndexOf(currentSpheresList, currentBonesList[2 * i + 1])].transform.position;
+                var end   = Spheres[Array.IndexOf(currentSpheresList, currentBonesList[2 * i + 1])].transform.position;
+
 
                 if (start == Vector3.zero || end == Vector3.zero)
                 {
@@ -424,16 +516,19 @@ namespace Assets.Scripts.AvatarRenderer
                     continue;
                 }
 
+
                 Bones[i].SetActive(true);
-                var offset = end - start;
-                var scale = new Vector3(width, offset.magnitude / 2.0f, width);
+                var offset   = end - start;
+                var scale    = new Vector3(width, offset.magnitude / 2.0f, width);
                 var position = start + offset / 2.0f;
 
-                Bones[i].transform.position = position;
-                Bones[i].transform.up = offset;
-                Bones[i].transform.localScale = scale;
+
+                Bones[i].transform.position   = position;
+                Bones[i].transform.up          = offset;
+                Bones[i].transform.localScale  = scale;
             }
         }
+
 
         /// <summary>
         ///     Sets the avatar control with joint position.
@@ -451,7 +546,9 @@ namespace Assets.Scripts.AvatarRenderer
             if (jointsPosition.Length != currentKeypointsCount) return;
             usingAvatar = useAvatar;
 
+
             currentJoints = jointsPosition;
+
 
             humanoid.SetActive(useAvatar);
 #if UNITY_STANDALONE
@@ -459,6 +556,7 @@ namespace Assets.Scripts.AvatarRenderer
 #else
             skeleton.SetActive(!useAvatar);
 #endif
+
 
             if (useAvatar)
             {
@@ -473,8 +571,10 @@ namespace Assets.Scripts.AvatarRenderer
                 SetJointOverlays(jointsRotation);
             }
 
+
             //zedSkeletonAnimator.PoseWasUpdatedIK();
         }
+
 
         /// <summary>
         ///     Utility function to apply the rest pose to the bones.
@@ -487,15 +587,18 @@ namespace Assets.Scripts.AvatarRenderer
                 {
                     var outPoseTransform = outPose[currentHumanBodyBones[i]].transform;
 
+
                     if (currentParentIds[i] == parentIdx)
                     {
                         var restPoseRotation = m_DefaultRotations[currentHumanBodyBones[i]];
                         var restPoseRotChild = new Quaternion();
 
+
                         if (currentParentIds[i] != -1)
                         {
                             var jointRotation = restPosRot * outPoseTransform.localRotation;
                             outPoseTransform.localRotation = jointRotation;
+
 
                             if (!inverse)
                                 restPoseRotChild = restPosRot * restPoseRotation;
@@ -507,10 +610,12 @@ namespace Assets.Scripts.AvatarRenderer
                             restPoseRotChild = restPosRot;
                         }
 
+
                         PropagateRestPoseRotations(i, outPose, restPoseRotChild, inverse);
                     }
                 }
         }
+
 
 
         /// <summary>
@@ -525,7 +630,9 @@ namespace Assets.Scripts.AvatarRenderer
                     if (rigBone[bone].transform)
                         rigBone[bone].transform.localRotation = m_DefaultRotations[bone];
 
+
             PropagateRestPoseRotations(0, rigBone, m_DefaultRotations[0], false);
+
 
             for (var i = 0; i < currentHumanBodyBones.Length; i++)
                 if (currentHumanBodyBones[i] != HumanBodyBones.LastBone && rigBone[currentHumanBodyBones[i]].transform)
@@ -536,7 +643,9 @@ namespace Assets.Scripts.AvatarRenderer
                         rigBone[currentHumanBodyBones[i]].transform.localRotation = newRotation;
                     }
 
+
             PropagateRestPoseRotations(0, rigBone, Quaternion.Inverse(m_DefaultRotations[0]), true);
+
 
             // Reposition root depending on hips position.
             if (rigBone[HumanBodyBones.Hips].transform)
@@ -548,6 +657,7 @@ namespace Assets.Scripts.AvatarRenderer
         }
 
 
+
         /// <summary>
         ///     Update the "currentXXX" values depending on the active BODY_FORMAT
         /// </summary>
@@ -557,30 +667,32 @@ namespace Assets.Scripts.AvatarRenderer
             switch (pBodyFormat)
             {
                 case BODY_FORMAT.BODY_34:
-                    currentConfidences = confidences34;
-                    currentJoints = joints34;
+                    currentConfidences    = confidences34;
+                    currentJoints         = joints34;
                     currentHumanBodyBones = BodyFormat.humanBones34;
-                    currentSpheresList = BodyFormat.sphereList34;
+                    currentSpheresList    = BodyFormat.sphereList34;
                     currentSpheresNameList = BodyFormat.sphereNameList34;
-                    currentBonesList = BodyFormat.bonesList34;
-                    currentParentIds = BodyFormat.parentsIdx_34;
-                    currentLeftAnkleIndex = BodyFormat.JointType_34_AnkleLeft;
+                    currentBonesList      = BodyFormat.bonesList34;
+                    currentParentIds      = BodyFormat.parentsIdx_34;
+                    currentLeftAnkleIndex  = BodyFormat.JointType_34_AnkleLeft;
                     currentRightAnkleIndex = BodyFormat.JointType_34_AnkleRight;
-                    currentKeypointsCount = BodyFormat.JointType_34_COUNT;
+                    currentKeypointsCount  = BodyFormat.JointType_34_COUNT;
                     break;
 
+
                 case BODY_FORMAT.BODY_38:
-                    currentConfidences = confidences38;
-                    currentJoints = joints38;
+                    currentConfidences    = confidences38;
+                    currentJoints         = joints38;
                     currentHumanBodyBones = BodyFormat.humanBones38;
-                    currentSpheresList = BodyFormat.sphereList38;
+                    currentSpheresList    = BodyFormat.sphereList38;
                     currentSpheresNameList = BodyFormat.sphereNameList38;
-                    currentBonesList = BodyFormat.bonesList38;
-                    currentParentIds = BodyFormat.parentsIdx_38;
-                    currentLeftAnkleIndex = BodyFormat.JointType_LEFT_ANKLE;
+                    currentBonesList      = BodyFormat.bonesList38;
+                    currentParentIds      = BodyFormat.parentsIdx_38;
+                    currentLeftAnkleIndex  = BodyFormat.JointType_LEFT_ANKLE;
                     currentRightAnkleIndex = BodyFormat.JointType_RIGHT_ANKLE;
-                    currentKeypointsCount = BodyFormat.JointType_38_COUNT;
+                    currentKeypointsCount  = BodyFormat.JointType_38_COUNT;
                     break;
+
                 default:
                     Debug.LogError("Error: Invalid BODY_MODEL! Please use either BODY_34 or BODY_38.");
 #if UNITY_EDITOR
@@ -593,16 +705,18 @@ namespace Assets.Scripts.AvatarRenderer
         }
 
 
+
         public void AdjustFeetOffset(float alpha)
         {
             if (animator.GetBoneTransform(HumanBodyBones.LeftToes) &&
                 animator.GetBoneTransform(HumanBodyBones.RightToes))
             {
-                var leftFootHeight = animator.GetBoneTransform(HumanBodyBones.LeftToes).position.y;
+                var leftFootHeight  = animator.GetBoneTransform(HumanBodyBones.LeftToes).position.y;
                 var rightFootHeight = animator.GetBoneTransform(HumanBodyBones.RightToes).position.y;
                 FeetOffset = alpha * Mathf.Min(leftFootHeight, rightFootHeight) + (1 - alpha) * FeetOffset;
             }
         }
+
 
 
         /// <summary>
@@ -614,13 +728,14 @@ namespace Assets.Scripts.AvatarRenderer
         }
 
 
+
         public string GetJointTypeName(int jointId)
         {
             return currentBodyFormat.GetJointTypeName(jointId);
         }
 
-        #region const_variables
 
+        #region const_variables
 
 
         // List of available colors for Skeletons
@@ -636,8 +751,10 @@ namespace Assets.Scripts.AvatarRenderer
             new(194.0f / 255.0f, 72.0f / 255.0f, 113.0f / 255.0f)
         };
 
+
         #endregion
     }
+
 
     public static class TransformExtensions
     {
@@ -646,6 +763,7 @@ namespace Assets.Scripts.AvatarRenderer
             input.x *= -1f;
             return input;
         }
+
 
         public static Quaternion mirror_x(this Quaternion input)
         {

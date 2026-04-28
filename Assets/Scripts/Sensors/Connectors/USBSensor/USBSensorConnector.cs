@@ -1,4 +1,4 @@
-﻿#if UNITY_STANDALONE
+#if UNITY_STANDALONE
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
@@ -55,22 +55,48 @@ namespace Assets.Scripts.Sensors.Connectors.USBSensor
         /// <returns>Line read from USB</returns>
         public void Read()
         {
-            serialPort.WriteLine("r");
-            var data = serialPort.ReadLine();
-            var rawBytes = data.Split(',');
-            if (rawBytes.Length != Sensors.Count)
+            try
             {
-                Debug.LogError("Message size mismatch");
-                return;
-            }
+                // Just read the latest line from Arduino (no command needed)
+                var data = serialPort.ReadLine();
+                var rawBytes = data.Split(',');
+                
+                // Skip header lines (non-numeric data like "A0,A1,A2,A3")
+                if (!char.IsDigit(rawBytes[0][0]))
+                {
+                    return;
+                }
 
-            for (var i = 0; i < rawBytes.Length; i++)
-                if (rawBytes[i].Length > 1)
-                    Debug.LogError("Unexpectedly long sensor read received!");
-                else if (rawBytes.Length == 0)
-                    Debug.LogError("Null byte received");
-                else
-                    Sensors[i].Update(Convert.ToInt32(rawBytes[0]));
+                if (rawBytes.Length != Sensors.Count)
+                {
+                    Debug.LogWarning($"Message size mismatch: expected {Sensors.Count}, got {rawBytes.Length}");
+                    return;
+                }
+
+                for (var i = 0; i < rawBytes.Length; i++)
+                {
+                    var value = rawBytes[i].Trim();
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        Debug.LogWarning($"Empty value received at index {i}");
+                        continue;
+                    }
+                    if (value.Length > 4) // Max value for 10-bit ADC is 1023 (4 chars)
+                    {
+                        Debug.LogWarning($"Unexpectedly long sensor read received: {value}");
+                        continue;
+                    }
+                    Sensors[i].Update(Convert.ToInt32(value));
+                }
+            }
+            catch (TimeoutException)
+            {
+                // Timeout is expected if no data available - just skip this read
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"USB sensor read error: {ex.Message}");
+            }
         }
     }
 }

@@ -13,7 +13,6 @@ using Assets.Scripts.Util;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
 namespace Assets.Scripts.Sensors
 {
     /// <summary>
@@ -37,22 +36,23 @@ namespace Assets.Scripts.Sensors
 
         public SensorSystemState GetState()
         {
+            var now = DateTime.UtcNow;
             var combinedFsrState = _fsrController.GetState();
 
             SensorSystemState next = new(
-                (int)(DateTime.UtcNow - _lastStateTimestamp).TotalMilliseconds,
+                (int)(now - _lastStateTimestamp).TotalMilliseconds,
                 combinedFsrState.Item1,
                 combinedFsrState.Item2,
                 _zedController.GetState()
             );
 
-            _lastStateTimestamp = next.timestamp;
+            _lastStateTimestamp = now;
 
             var patientHandler = _zedController.GetPatientHandler();
             if (patientHandler) patientHandler.SetFeetPressure(next);
+
             return next;
         }
-
 
         private IConnector<int> FsrConnect()
         {
@@ -70,27 +70,40 @@ namespace Assets.Scripts.Sensors
             {
                 case "Mock":
                     return new MockSensorConnector(sensors);
+
                 case "USB":
                     var usbPort = PlayerPrefs.GetString("FSRUsbPort", "");
                     if (usbPort == "")
                         throw new IllegalSettingsException("FSRUsbPort", "You need to select an FSR USB Port");
-                    return new USBSensorConnector(sensors, usbPort, 115200, Parity.None, 8, StopBits.One, 4);
+
+                    return new USBSensorConnector(
+                        sensors,
+                        usbPort,
+                        115200,
+                        Parity.None,
+                        10,
+                        StopBits.One,
+                        4
+                    );
+
                 case "WebSocket":
                     var uriString = PlayerPrefs.GetString("FSRUri", "");
                     if (uriString == "")
                         throw new IllegalSettingsException("FSRUri", "You need to input the FSR connection url");
+
                     var apiKey = PlayerPrefs.GetString("FSRApiKey", "");
                     if (apiKey == "")
                         throw new IllegalSettingsException("FSRApiKey", "You need to input an FSR API Key");
 
                     return new WebSocketSensorConnector(new Uri(uriString), apiKey, sensors);
+
                 case "TCP":
                     throw new IllegalSettingsException("FSRConntype", "TCP server is not implemented");
+
                 default:
                     throw new IllegalSettingsException("FSRConntype", "You need to select an FSR connection type!");
             }
         }
-
 
         private void BackToMenu()
         {
@@ -99,7 +112,19 @@ namespace Assets.Scripts.Sensors
 
         public void Start()
         {
-            _zedController = FindObjectsByType<CustomZedController>()[0];
+            var zedControllers = FindObjectsByType<CustomZedController>();
+            if (zedControllers.Length == 0)
+            {
+                Debug.LogError("No CustomZedController found in the scene.");
+                errorController.SetText("No ZED controller was found in the scene.");
+                errorController.Show();
+                Invoke(nameof(BackToMenu), 5);
+                return;
+            }
+
+            _zedController = zedControllers[0];
+            _lastStateTimestamp = DateTime.UtcNow;
+
             try
             {
                 FsrConnector = FsrConnect();
@@ -121,7 +146,7 @@ namespace Assets.Scripts.Sensors
 
         public bool IsReady()
         {
-            return _zedController.IsReady();
+            return _zedController != null && _zedController.IsReady();
         }
     }
 }
