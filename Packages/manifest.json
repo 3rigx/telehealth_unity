@@ -1,9 +1,10 @@
 {
   "dependencies": {
-    "com.itisnajim.socketiounity": "https://github.com/itisnajim/SocketIOUnity.git",
-    "com.stereolabs.zed": "https://github.com/stereolabs/zed-unity.git?path=/ZEDCamera/Assets",
+    "com.itisnajim.socketiounity": "https://github.com/itisnajim/SocketIOUnity.git#v1.1.5",
+    "com.stereolabs.zed": "https://github.com/stereolabs/zed-unity.git?path=/ZEDCamera/Assets#v5.4.0",
     "com.unity.2d.sprite": "1.0.0",
-    "com.unity.ai.navigation": "2.0.12",
+    "com.unity.ai.assistant": "2.9.0-pre.2",
+    "com.unity.ai.navigation": "2.0.13",
     "com.unity.collab-proxy": "2.11.4",
     "com.unity.feature.development": "1.0.2",
     "com.unity.ide.rider": "3.0.39",
@@ -30,7 +31,6 @@
     "com.unity.modules.particlesystem": "1.0.0",
     "com.unity.modules.physics": "1.0.0",
     "com.unity.modules.physics2d": "1.0.0",
-    "com.unity.modules.physicscore2d": "1.0.0",
     "com.unity.modules.screencapture": "1.0.0",
     "com.unity.modules.terrain": "1.0.0",
     "com.unity.modules.terrainphysics": "1.0.0",

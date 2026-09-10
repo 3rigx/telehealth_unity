@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #define BAUD 2000000
-#define SAMPLE_DELAY_MS 100
+#define SAMPLE_DELAY_MS 50
 
 int fsr1 = 0;
 int fsr2 = 0;

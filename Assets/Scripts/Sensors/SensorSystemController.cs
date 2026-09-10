@@ -31,18 +31,28 @@ namespace Assets.Scripts.Sensors
 
         public void Read()
         {
-            _fsrController.Read();
+            // No-op when FSR is disabled / failed to connect.
+            _fsrController?.Read();
         }
 
         public SensorSystemState GetState()
         {
             var now = DateTime.UtcNow;
-            var combinedFsrState = _fsrController.GetState();
+
+            // Empty (zero) FSR when the insoles aren't in use, so a ZED-only
+            // session still produces valid state without the FSR.
+            FSRState leftFoot = new(), rightFoot = new();
+            if (_fsrController != null)
+            {
+                var combinedFsrState = _fsrController.GetState();
+                leftFoot = combinedFsrState.Item1;
+                rightFoot = combinedFsrState.Item2;
+            }
 
             SensorSystemState next = new(
                 (int)(now - _lastStateTimestamp).TotalMilliseconds,
-                combinedFsrState.Item1,
-                combinedFsrState.Item2,
+                leftFoot,
+                rightFoot,
                 _zedController.GetState()
             );
 
@@ -79,9 +89,9 @@ namespace Assets.Scripts.Sensors
                     return new USBSensorConnector(
                         sensors,
                         usbPort,
-                        115200,
+                        2000000,
                         Parity.None,
-                        10,
+                        8,
                         StopBits.One,
                         4
                     );
@@ -112,6 +122,7 @@ namespace Assets.Scripts.Sensors
 
         public void Start()
         {
+            Debug.Log("Initializing Sensor System Controller...");
             var zedControllers = FindObjectsByType<CustomZedController>();
             if (zedControllers.Length == 0)
             {
@@ -125,23 +136,54 @@ namespace Assets.Scripts.Sensors
             _zedController = zedControllers[0];
             _lastStateTimestamp = DateTime.UtcNow;
 
+            // FSR is optional. Only connect it when the session enables it, and
+            // never let an FSR problem (e.g. the USB port isn't present) take down
+            // the rest of the sensor system — the ZED must still run. Previously an
+            // unhandled IOException from Connect() aborted Start(), leaving
+            // _fsrController null and NPE'ing GetState() every frame, which killed
+            // the ZED capture too.
+            if (!SessionContext.FsrEnabled)
+            {
+                Debug.Log("[Sensors] FSR disabled for this session — skipping FSR connect.");
+                _fsrController = null;
+                return;
+            }
+
+            // Single-insole path: the PressureRecorder (owned by ExerciseController) opens
+            // the Arduino serial port on its own background thread to capture the full
+            // 100 Hz stream. Connecting the legacy combined controller here would fight for
+            // the same COM port, so this controller stays out of FSR entirely and reports
+            // empty feet; ExerciseController injects the live pressure into each frame.
+            if (PressureConfig.IsSingleFoot)
+            {
+                Debug.Log("[Sensors] Single-insole pressure handled by PressureRecorder — skipping legacy FSR connect.");
+                _fsrController = null;
+                return;
+            }
+
             try
             {
                 FsrConnector = FsrConnect();
+                Debug.Log("Connecting to FSR");
+                FsrConnector.Connect();
+                _fsrController = new CombinedFSRController(FsrConnector);
+                Debug.Log("FSR connected.");
             }
             catch (IllegalSettingsException ex)
             {
+                // Misconfiguration (e.g. USB selected but no port) — surface it.
                 Debug.LogError(ex.message);
                 errorController.SetText(ex.message);
                 errorController.Show();
                 Invoke(nameof(BackToMenu), 5);
-                return;
             }
-
-            Debug.Log("Connecting to FSR");
-            FsrConnector.Connect();
-
-            _fsrController = new CombinedFSRController(FsrConnector);
+            catch (Exception ex)
+            {
+                // Hardware/port failure — carry on without FSR instead of aborting.
+                Debug.LogWarning($"[Sensors] FSR connect failed: {ex.Message} — continuing without FSR.");
+                FsrConnector = null;
+                _fsrController = null;
+            }
         }
 
         public bool IsReady()

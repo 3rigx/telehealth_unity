@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Assets.Scripts.Exercises;
@@ -69,7 +70,15 @@ namespace Assets.Scripts.SaveSystem
 
         public bool Verify()
         {
-            return hash == GetSaltedHash(GetSaveHash());
+            // Backward compatibility: if hash is null, allow load (file was created before hash verification)
+            if (hash == null)
+            {
+                Debug.LogWarning("Save file loaded without hash verification (legacy file format)");
+                return true;
+            }
+            
+            // Compare byte arrays by value, not reference
+            return hash.SequenceEqual(GetSaltedHash(GetSaveHash()));
         }
     }
 

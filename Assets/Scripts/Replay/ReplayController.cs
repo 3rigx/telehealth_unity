@@ -4,6 +4,7 @@ using System.Linq;
 using Assets.Scripts.AvatarRenderer;
 using Assets.Scripts.Exercises;
 using Assets.Scripts.SaveSystem;
+using Assets.Scripts.Sensors.Zed;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Chart;
 using Assets.Scripts.UI.Chart.MyChart;
@@ -60,6 +61,14 @@ namespace Assets.Scripts.Replay
 
         public SkeletonChartController SkeletonChartController;
 
+        [Header("Angle Visualization")]
+        public AngleVisualizer AngleVisualizer;
+        public AngleChartController AngleChartController;
+        public bool EnableAngleVisualization = true;
+        public bool UseFirstFrameAsRestPosition = true;
+
+        private Vector3[] _restJointPositions;
+        private JointAngleCalculator.JointAngle[] _currentAngles;
 
         private void Refresh()
         {
@@ -83,6 +92,12 @@ namespace Assets.Scripts.Replay
                     if (JointChart != null) JointChart.AddState(sk);
                     _skeletonHandler.AdjustFeetOffset(sk.FeetOffset);
 
+                    // Calculate and visualize joint angles
+                    if (EnableAngleVisualization)
+                    {
+                        CalculateAndUpdateAngles(sk);
+                    }
+
                     _skeletonHandler.SetControlWithJointPosition(
                         _skeletonOffset == Vector3.zero
                             ? sk.JointPos
@@ -92,6 +107,10 @@ namespace Assets.Scripts.Replay
                     _cameraOffset = sk.cameraPos;
                     _cameraRotationOffset = sk.cameraRot;
                     if (_useAvatar) _skeletonHandler.Move();
+
+                    // Mirror the replay frame to any connected Flutter dashboard.
+                    Network.TelerehabBroadcaster.BroadcastState(currState, _currentAngles,
+                        cameraConnected: true, pressureConnected: true);
                 }
             }
 
@@ -127,6 +146,102 @@ namespace Assets.Scripts.Replay
             JumpToPos((int)pos);
         }
 
+        /// <summary>
+        /// Calculate joint angles and update visualizer
+        /// </summary>
+        private void CalculateAndUpdateAngles(SkeletonState sk)
+        {
+            // Initialize rest positions if not set yet
+            if (_restJointPositions == null && UseFirstFrameAsRestPosition)
+            {
+                _restJointPositions = (Vector3[])sk.JointPos.Clone();
+            }
+
+            // Calculate current angles
+            Vector3[] currentPositions = _skeletonOffset == Vector3.zero 
+                ? sk.JointPos 
+                : sk.JointPos.Select(joint => joint + _skeletonOffset).ToArray();
+
+            _currentAngles = JointAngleCalculator.CalculateAllJointAngles(
+                currentPositions, 
+                sk.Format, 
+                _restJointPositions);
+
+            // Update visualizer
+            if (AngleVisualizer != null)
+                AngleVisualizer.UpdateAngleDisplays(_currentAngles);
+
+            // Feed into chart
+            AngleChartController?.AddAngleState(_currentAngles);
+        }
+
+        /// <summary>
+        /// Toggle angle visualization on/off
+        /// </summary>
+        public void ToggleAngleVisualization()
+        {
+            EnableAngleVisualization = !EnableAngleVisualization;
+            if (AngleVisualizer != null)
+            {
+                if (!EnableAngleVisualization)
+                {
+                    AngleVisualizer.ClearAllDisplays();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set current joint positions as rest position
+        /// </summary>
+        public void SetCurrentAsRestPosition()
+        {
+            var currState = _exercise.GetSensorState();
+            if (currState.skeleton != null)
+            {
+                _restJointPositions = (Vector3[])currState.skeleton.JointPos.Clone();
+                Debug.Log("Rest position updated to current frame");
+            }
+        }
+
+        /// <summary>
+        /// Reset rest position to default values
+        /// </summary>
+        public void ResetRestPosition()
+        {
+            _restJointPositions = null;
+            Debug.Log("Rest position reset to default");
+        }
+
+        /// <summary>
+        /// Configure which angles to display
+        /// </summary>
+        public void ConfigureAngleDisplay(bool leftElbow = true, bool rightElbow = true, 
+            bool leftKnee = true, bool rightKnee = true, bool leftShoulder = true, 
+            bool rightShoulder = true, bool leftHip = true, bool rightHip = true)
+        {
+            if (AngleVisualizer != null)
+            {
+                AngleVisualizer.showLeftElbow = leftElbow;
+                AngleVisualizer.showRightElbow = rightElbow;
+                AngleVisualizer.showLeftKnee = leftKnee;
+                AngleVisualizer.showRightKnee = rightKnee;
+                AngleVisualizer.showLeftShoulder = leftShoulder;
+                AngleVisualizer.showRightShoulder = rightShoulder;
+                AngleVisualizer.showLeftHip = leftHip;
+                AngleVisualizer.showRightHip = rightHip;
+                
+                Debug.Log("Angle display configuration updated");
+            }
+        }
+
+        /// <summary>
+        /// Get current angle values for external access
+        /// </summary>
+        public JointAngleCalculator.JointAngle[] GetCurrentAngles()
+        {
+            return _currentAngles;
+        }
+
         public IEnumerator AdvanceCoroutine()
         {
             while (_cursor < _exercise.StateLength())
@@ -145,10 +260,11 @@ namespace Assets.Scripts.Replay
             }
             else
             {
-                var save = StandaloneFileBrowser.StandaloneFileBrowser.OpenFilePanel("Open File", "", "json", false);
+                var save = StandaloneFileBrowser.StandaloneFileBrowser.OpenFilePanel(
+                    "Open session.json (or legacy save)", "", "json", false);
                 if (save.Length == 0) return;
 
-                _exercise = SaveManager.LoadExercise(save[0]);
+                _exercise = SessionLoader.LoadForReplay(save[0]);
             }
 
             if (_exercise == null)
@@ -171,6 +287,7 @@ namespace Assets.Scripts.Replay
             _skeletonHandler.InitSkeleton(1);
             _skeletonHandler.SetPatient();
             _cursor = 0;
+
             PositionSlider.maxValue = _exercise.StateLength();
             Refresh();
         }
@@ -180,12 +297,15 @@ namespace Assets.Scripts.Replay
             Assert.IsNotNull(ViewCamera);
             Assert.IsNotNull(PositionSlider);
             Assert.IsNotNull(Avatar);
+
             if (AutoStart) DelayedStart();
         }
 
         private void OnDestroy()
         {
             StopCoroutine(AdvanceCoroutine());
+            AngleVisualizer?.ClearAllDisplays();
+            AngleChartController?.Clear();
         }
 
         public void Play()
@@ -256,6 +376,22 @@ namespace Assets.Scripts.Replay
                 _cameraUserRotationOffset = Quaternion.identity;
                 _cameraUserOffset = new Vector3(0, 1, -1);
                 _skeletonOffset = new Vector3(0, 1.25f, 0);
+            }
+
+            // Angle visualization controls
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                ToggleAngleVisualization();
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                SetCurrentAsRestPosition();
+            }
+
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                ResetRestPosition();
             }
 
             if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))

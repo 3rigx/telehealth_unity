@@ -51,5 +51,12 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "telehealth-unity.slnx"
+    "dotnet.defaultSolution": "telehealth-unity.slnx",
+    "chat.mcp.serverSampling": {
+        "telehealth-unity/.vscode/mcp.json: Perplexity": {
+            "allowedModels": [
+                "copilot/auto"
+            ]
+        }
+    }
 }

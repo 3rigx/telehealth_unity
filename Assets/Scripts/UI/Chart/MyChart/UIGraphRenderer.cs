@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Random = System.Random;
 
-public class LineRenderer : Graphic
+public class UIGraphRenderer : Graphic
 {
     private int _cursor = 0;
 
@@ -27,17 +27,15 @@ public class LineRenderer : Graphic
         }
     }
 
-
     protected void populateValues(List<float> values, VertexHelper vh)
     {
-
         if (values.Count < 2)
             return;
 
         float width = rectTransform.rect.width;
         float height = rectTransform.rect.height;
         float unitWidth = Mathf.Min(maxUnitWidth, rectTransform.rect.width / values.Count);
-        float unitHeight = rectTransform.rect.height / 256 ;
+        float unitHeight = rectTransform.rect.height / 256;
 
         unitHeight *= values.Max() / values.Min();
 
@@ -64,22 +62,17 @@ public class LineRenderer : Graphic
         get
         {
             List<float> consideredValues = new List<float>();
-
             int end = Mathf.Min(_cursor + windowSize, values.Count);
             for (int i = _cursor; i < end; i++)
-            {
                 consideredValues.Add(values[i]);
-            }
-
             return consideredValues;
         }
-    }   
-    
+    }
+
     protected override void OnPopulateMesh(VertexHelper vh)
     {
         vh.Clear();
-        populateValues(values,vh);
-
+        populateValues(values, vh);
     }
 
     public void AddValue(float value)
@@ -95,6 +88,4 @@ public class LineRenderer : Graphic
         if (sliding && _cursor + windowSize < values.Count) _cursor += values.Count;
         SetVerticesDirty();
     }
-
-
 }

@@ -135,7 +135,17 @@ namespace Assets.Scripts.Sensors.Zed
         private void OnZEDReady()
         {
             if (StartObjectDetectionAutomatically && !ZedManager.IsObjectDetectionRunning)
+            {
+                // Self-occlusion during adduction (arm/hand against the torso) makes the
+                // MEDIUM model drop the wrist/elbow. The ACCURATE model tracks occluded
+                // limbs far better, body fitting infers hidden joints from the kinematic
+                // skeleton, and a longer prediction timeout keeps the joint alive while
+                // it is briefly hidden against the body instead of blanking out at 0.2 s.
+                ZedManager.bodyTrackingModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE;
+                ZedManager.enableBodyFitting = true;
+                ZedManager.bodyTrackingPredictionTimeout = 1.0f;
                 ZedManager.StartBodyTracking();
+            }
         }
 
         private void OnDestroy()

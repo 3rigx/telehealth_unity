@@ -51,7 +51,7 @@ namespace Assets.Scripts.AvatarRenderer
 
         public static void attach(GameObject target, CustomSkeletonHandler handler)
         {
-            if (zedController == null) zedController = FindObjectsByType<CustomZedController>().First();
+            if (zedController == null) zedController = FindObjectsByType<CustomZedController>().FirstOrDefault();
             target.AddComponent<PatientSelectorClickHandler>().Create(handler);
         }
     }
@@ -462,14 +462,17 @@ namespace Assets.Scripts.AvatarRenderer
             }
 
 
+            // Full-scale from PressureConfig (10-bit → 1023), not a hardcoded /255 which
+            // clamped every real reading to the top of the colour ramp.
+            float adcMax = Assets.Scripts.Sensors.FSR.PressureConfig.AdcMax;
             var leftHeelColor =
-                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(lHeelPressure / 255, Powf));
+                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(lHeelPressure / adcMax, Powf));
             var leftToeColor =
-                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(lToePressure / 255, Powf));
+                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(lToePressure / adcMax, Powf));
             var rightHeelColor =
-                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(rHeelPressure / 255, Powf));
+                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(rHeelPressure / adcMax, Powf));
             var rightToeColor =
-                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(rToePressure / 255, Powf));
+                Color32.Lerp(MinPressureColor, MaxPressureColor, Mathf.Pow(rToePressure / adcMax, Powf));
 
 
             UpdateJointColor(leftHeelColor, leftToeColor, rightHeelColor, rightToeColor);

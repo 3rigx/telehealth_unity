@@ -15,8 +15,10 @@ namespace Assets.Scripts.Sensors.FSR
         public void Read()
         {
             _connector.Read();
-            left = new FSRState(_connector.Sensors[0].GetValue(), 0,0, _connector.Sensors[1].GetValue());
-            right = new FSRState(_connector.Sensors[2].GetValue(), 0, 0, _connector.Sensors[3].GetValue());
+            // Connector channel order is [L-Heel, L-Toe, R-Heel, R-Toe]
+            // (see SensorSystemController.FsrConnect); FSRState takes (toe, .., heel).
+            left = new FSRState(_connector.Sensors[1].GetValue(), 0, 0, _connector.Sensors[0].GetValue());
+            right = new FSRState(_connector.Sensors[3].GetValue(), 0, 0, _connector.Sensors[2].GetValue());
         }
 
         public (FSRState, FSRState) GetState()

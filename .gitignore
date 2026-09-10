@@ -73,3 +73,6 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 Dist
+# ZED recordings (large; keep out of git)
+*.svo
+*.svo2

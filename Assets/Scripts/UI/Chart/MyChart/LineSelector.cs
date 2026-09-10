@@ -19,7 +19,7 @@ namespace Assets.Scripts.UI.Chart.MyChart
             }
         }
 
-        public void Initialise(string label, LineRenderer[] targets)
+        public void Initialise(string label, UIGraphRenderer[] targets)
         {
             this.label = label;
             this.targets = targets.Select(e => e.gameObject).ToArray();
@@ -52,7 +52,7 @@ namespace Assets.Scripts.UI.Chart.MyChart
             buttons.Clear();
         }
 
-        public void addGroup(string groupName, LineRenderer[] lines)
+        public void addGroup(string groupName, UIGraphRenderer[] lines)
         {
             LineButton newButton = Instantiate(Resources.Load<GameObject>("Prefabs/LineButton")).GetComponent<LineButton>();
             newButton.Initialise(groupName, lines);
@@ -60,7 +60,7 @@ namespace Assets.Scripts.UI.Chart.MyChart
 
         }
 
-        public void addLine(string name, LineRenderer line)
+        public void addLine(string name, UIGraphRenderer line)
         {
             addGroup(name,new []{line});
         }

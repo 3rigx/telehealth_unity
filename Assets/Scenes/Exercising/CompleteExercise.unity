@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000000, guid: aa1d3b9d69c68414ab6957cd087340a8, type: 2}
+  m_LightingDataAsset: {fileID: 112000000, guid: 8707caed91925624cbedeb2e922f63e0, type: 2}
   m_LightingSettings: {fileID: 4890085278179872738, guid: 1f6d475744f98974b9da47a6bd0487df, type: 2}
 --- !u!196 &4
 NavMeshSettings:
@@ -1982,6 +1982,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1480904696}
   m_CullTransparentMesh: 1
+--- !u!1 &1531424084
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1531424086}
+  - component: {fileID: 1531424085}
+  m_Layer: 0
+  m_Name: TelerehabVideo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1531424085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1531424084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 397740302c76b7043a10765c237a8fdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Network.TelerehabVideoStreamer
+  OverlayCamera: {fileID: 1394870590}
+  ZedRawTexture: {fileID: 0}
+  port: 8766
+  captureWidth: 640
+  captureHeight: 360
+  jpegQuality: 60
+  targetFps: 15
+--- !u!4 &1531424086
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1531424084}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1633948220
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2952,3 +3003,4 @@ SceneRoots:
   - {fileID: 1426195297}
   - {fileID: 1005151176}
   - {fileID: 1813342797}
+  - {fileID: 1531424086}

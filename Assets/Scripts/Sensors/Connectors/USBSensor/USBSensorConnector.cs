@@ -57,8 +57,14 @@ namespace Assets.Scripts.Sensors.Connectors.USBSensor
         {
             try
             {
-                // Just read the latest line from Arduino (no command needed)
-                var data = serialPort.ReadLine();
+                // Read the latest line, discard backlog to minimize latency
+                string data = null;
+                while (serialPort.BytesToRead > 0)
+                {
+                    data = serialPort.ReadLine();
+                }
+                if (data == null) return;
+
                 var rawBytes = data.Split(',');
                 
                 // Skip header lines (non-numeric data like "A0,A1,A2,A3")
